@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>swelltrain</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #000;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #glCanvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: block;
+    }
+
+    #number-display {
+      position: fixed;
+      transform: translate(-50%, -50%);
+      font-family: 'Lato', sans-serif;
+      font-weight: 300;
+      color: #F5EDD1;
+      letter-spacing: 0.05em;
+      opacity: 0;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    #overlay {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      text-align: center;
+      user-select: none;
+    }
+
+    #name-text {
+      font-family: 'Lato', sans-serif;
+      font-weight: 300;
+      font-size: clamp(1.4rem, 4vw, 2.4rem);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #F5EDD1;
+      opacity: 0.88;
+      margin-bottom: 1.4rem;
+    }
+
+    #icon-links {
+      display: flex;
+      gap: 1.6rem;
+      justify-content: center;
+      pointer-events: auto;
+    }
+
+    #icon-links a {
+      color: #F5EDD1;
+      opacity: 0.6;
+      transition: opacity 0.25s ease;
+      line-height: 0;
+      display: inline-block;
+    }
+
+    #icon-links a:hover { opacity: 1; }
+
+    #icon-links svg {
+      width: 22px; height: 22px;
+      fill: currentColor;
+    }
+
+    #debug-panel {
+      position: fixed;
+      top: 12px; right: 12px;
+      background: rgba(0, 0, 0, 0.78);
+      border: 1px solid rgba(245, 237, 209, 0.18);
+      border-radius: 6px;
+      padding: 12px 16px;
+      color: #F5EDD1;
+      font-family: 'Lato', monospace;
+      font-size: 11px;
+      width: 280px;
+      max-height: calc(100vh - 24px);
+      overflow-y: auto;
+      display: none;
+      z-index: 100;
+    }
+
+    #debug-panel.visible { display: block; }
+
+    #debug-panel h3 {
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-size: 10px;
+      margin-bottom: 10px;
+      opacity: 0.6;
+    }
+
+    .debug-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .debug-row label {
+      flex: 0 0 140px;
+      opacity: 0.75;
+      font-size: 10.5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .debug-row input[type=range] {
+      flex: 1;
+      height: 3px;
+      cursor: pointer;
+      accent-color: #F5EDD1;
+    }
+
+    .debug-row .val {
+      flex: 0 0 38px;
+      text-align: right;
+      font-size: 10px;
+      opacity: 0.65;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="glCanvas"></canvas>
+
+<div id="number-display">11</div>
+
+<div id="overlay">
+  <h1 id="name-text">swelltrain</h1>
+  <nav id="icon-links">
+    <!-- GitHub -->
+    <a href="https://github.com/swelltrain" target="_blank" rel="noopener" aria-label="GitHub">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
+      </svg>
+    </a>
+    <!-- LinkedIn -->
+    <a href="https://linkedin.com/in/swelltrain" target="_blank" rel="noopener" aria-label="LinkedIn">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+      </svg>
+    </a>
+    <!-- Email -->
+    <a href="mailto:hello@swelltrain.com" aria-label="Email">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+      </svg>
+    </a>
+  </nav>
+</div>
+
+<div id="debug-panel">
+  <h3>Debug — press D to close</h3>
+</div>
+
+<script>
+'use strict';
+
+// ---------------------------------------------------------------------------
+// CONFIG
+// ---------------------------------------------------------------------------
+const CONFIG = {
+  bugCount:              100,
+  blinkFreqMin:          0.1,
+  blinkFreqMax:          0.5,
+  blinkSyncRate:         0.005,
+  syncRadius:            150,
+  syncInterval:          60,
+  moveSpeedMin:          20,
+  moveSpeedMax:          80,
+  restMoveProbability:      0.00004,
+  neighborRestFactor:       0.4,
+  passingBugMoveProbability:0.012,
+  followSyncThreshold:      0.05,  // Hz diff below which contact = follow, not spook
+  neighborRadius:           120,
+  passingBugRadius:         40,
+  lumSyncRate:           0.004,
+  lumDecayRate:          0.003,
+  lumMin:                0.3,
+  lumMax:                0.7,
+  convergenceThreshold:  0.95,
+  freqSyncBand:          0.02,     // Hz band that counts as "same frequency"
+  convergenceDelay:      60,   // seconds to freeze after threshold before converging
+  convergenceSpeedMin:   80,   // px/s slowest bug during convergence
+  convergenceSpeedMax:  300,   // px/s fastest bug during convergence
+  spiralStrength:        0.8,  // tangential fraction (0=straight, higher=more spiral)
+  trailLifetime:         0.5,  // seconds a trail particle persists
+  trailSpeedCutoff:      0.9,  // fraction of speed range above which trails spawn
+  orbFadeDuration:       8.0,
+  orbMaxSize:            120,
+  baseGlow:              1.0,
+  ambientGlow:           0.22,
+  bugBaseSize:           9,
+  bugSizeScale:          14,
+  initialLockout:        1800,
+  lineSyncThreshold:     0.785,
+  flashMaxAlpha:         0.9,
+  flashDuration:         0.14,
+  flashProbability:      0.0003,
+  flashHalfWidth:        0.35,
+};
+
+const DEBUG_PARAMS = [
+  { key: 'bugCount',             label: 'Bug Count',            min: 10,   max: 200,  step: 1,    decimals: 0 },
+  { key: 'blinkFreqMin',         label: 'Blink Freq Min (Hz)',  min: 0.1,  max: 2.0,  step: 0.05, decimals: 2 },
+  { key: 'blinkFreqMax',         label: 'Blink Freq Max (Hz)',  min: 0.1,  max: 3.0,  step: 0.05, decimals: 2 },
+  { key: 'blinkSyncRate',        label: 'Sync Rate',            min: 0,    max: 0.05, step: 0.001,decimals: 3 },
+  { key: 'syncRadius',           label: 'Sync Radius (px)',     min: 20,   max: 400,  step: 5,    decimals: 0 },
+  { key: 'moveSpeedMin',         label: 'Move Speed Min',       min: 5,    max: 200,  step: 5,    decimals: 0 },
+  { key: 'moveSpeedMax',         label: 'Move Speed Max',       min: 5,    max: 300,  step: 5,    decimals: 0 },
+  { key: 'restMoveProbability',       label: 'Rest→Move Prob',        min: 0,    max: 0.005, step: 0.00001, decimals: 5 },
+  { key: 'neighborRestFactor',        label: 'Neighbor Rest Factor',  min: 0,    max: 1.0,  step: 0.05,   decimals: 2 },
+  { key: 'passingBugMoveProbability', label: 'Contact Trigger Prob',  min: 0,    max: 0.1,  step: 0.001,  decimals: 3 },
+  { key: 'followSyncThreshold',       label: 'Follow Sync Threshold', min: 0,    max: 0.5,  step: 0.005,  decimals: 3 },
+  { key: 'passingBugRadius',          label: 'Contact Radius (px)',   min: 10,   max: 200,  step: 5,      decimals: 0 },
+  { key: 'freqSyncBand',              label: 'Conv. Freq Band (Hz)',  min: 0.001,max: 0.1,  step: 0.001,  decimals: 3 },
+  { key: 'lumSyncRate',          label: 'Lum Sync Rate',        min: 0,    max: 0.02, step: 0.0005,decimals:4 },
+  { key: 'lumDecayRate',         label: 'Lum Decay Rate',       min: 0,    max: 0.02, step: 0.0005,decimals:4 },
+  { key: 'convergenceThreshold', label: 'Conv. Threshold',      min: 0.1,  max: 1.0,  step: 0.01, decimals: 2 },
+  { key: 'convergenceDelay',     label: 'Conv. Delay (s)',      min: 0,    max: 120,  step: 1,    decimals: 0 },
+  { key: 'convergenceSpeedMin',  label: 'Conv. Speed Min',      min: 20,   max: 200,  step: 5,    decimals: 0 },
+  { key: 'convergenceSpeedMax',  label: 'Conv. Speed Max',      min: 50,   max: 600,  step: 10,   decimals: 0 },
+  { key: 'spiralStrength',       label: 'Spiral Strength',      min: 0,    max: 2.0,  step: 0.05, decimals: 2 },
+  { key: 'trailLifetime',        label: 'Trail Lifetime (s)',   min: 0.1,  max: 2.0,  step: 0.05, decimals: 2 },
+  { key: 'trailSpeedCutoff',     label: 'Trail Speed Cutoff',   min: 0,    max: 1.0,  step: 0.05, decimals: 2 },
+  { key: 'baseGlow',             label: 'Base Glow',            min: 0,    max: 3.0,  step: 0.05, decimals: 2 },
+  { key: 'ambientGlow',          label: 'Ambient Glow',         min: 0,    max: 1.0,  step: 0.01, decimals: 2 },
+  { key: 'bugBaseSize',          label: 'Bug Base Size',        min: 4,    max: 50,   step: 1,    decimals: 0 },
+  { key: 'lineSyncThreshold',    label: 'Line Sync Threshold',  min: 0,    max: 3.14, step: 0.05, decimals: 2 },
+  { key: 'flashMaxAlpha',        label: 'Flash Max Alpha',      min: 0,    max: 1.0,  step: 0.01, decimals: 2 },
+  { key: 'flashDuration',        label: 'Flash Duration (s)',   min: 0.02, max: 1.0,  step: 0.01, decimals: 2 },
+  { key: 'flashProbability',     label: 'Flash Probability',    min: 0,    max: 0.005,step: 0.0001,decimals:4 },
+  { key: 'flashHalfWidth',       label: 'Flash Width (px)',     min: 0.05, max: 5,    step: 0.05, decimals: 2 },
+];
+
+// ---------------------------------------------------------------------------
+// CONSTANTS
+// ---------------------------------------------------------------------------
+const MAX_BUGS = 200;
+const TWO_PI   = Math.PI * 2;
+const RESTING  = 0;
+const MOVING   = 1;
+const CONVERGING = 2;
+const ABSORBED   = 3;   // bug has reached the orb and is no longer rendered separately
+
+// ---------------------------------------------------------------------------
+// TYPED ARRAYS
+// ---------------------------------------------------------------------------
+const pos    = new Float32Array(MAX_BUGS * 2);
+const target = new Float32Array(MAX_BUGS * 2);
+const vel    = new Float32Array(MAX_BUGS * 2);
+const phase  = new Float32Array(MAX_BUGS);
+const freq   = new Float32Array(MAX_BUGS);
+const lum    = new Float32Array(MAX_BUGS);
+const state  = new Uint8Array(MAX_BUGS);
+
+const a_position   = new Float32Array(MAX_BUGS * 2);
+const a_phase      = new Float32Array(MAX_BUGS);
+const a_luminosity = new Float32Array(MAX_BUGS);
+const a_size       = new Float32Array(MAX_BUGS);
+
+// Single-point arrays for orb
+const orb_pos = new Float32Array(2);
+const orb_ph  = new Float32Array(1);
+const orb_lum = new Float32Array(1);
+const orb_sz  = new Float32Array(1);
+
+// ---------------------------------------------------------------------------
+// ORB STATE
+// ---------------------------------------------------------------------------
+const orb = {
+  active:     false,
+  phase:      'grow',  // 'grow' | 'fade'
+  x:          0,
+  y:          0,
+  size:       0,
+  brightness: 0,
+  elapsed:    0,
+};
+
+// ---------------------------------------------------------------------------
+// FRAME COUNTER
+// ---------------------------------------------------------------------------
+let frameCount  = 0;
+let initMaxFreq = 0;   // highest freq assigned at reset; target for convergence
+
+// Convergence staging
+let convergencePending     = false;
+let convergencePendingTime = 0;       // seconds elapsed since threshold reached
+const convSpeed = new Float32Array(MAX_BUGS); // per-bug speed during convergence
+
+// Trail particle system
+const MAX_TRAIL   = 2000;
+const trailPos    = new Float32Array(MAX_TRAIL * 2);
+const trailAge    = new Float32Array(MAX_TRAIL);
+const trailLife   = new Float32Array(MAX_TRAIL);
+let   trailCount  = 0;
+let   trailSpawnTick = 0;
+
+// Trail upload buffers
+const a_trail_pos = new Float32Array(MAX_TRAIL * 2);
+// Arrival tracking (set when convergence fires, drives orb growth and phase transitions)
+let arrivedCount    = 0;
+let convergingTotal = 0;
+
+// DOM reference for the "11" reveal element
+const numberEl = document.getElementById('number-display');
+const a_trail_ph  = new Float32Array(MAX_TRAIL);
+const a_trail_lum = new Float32Array(MAX_TRAIL);
+const a_trail_sz  = new Float32Array(MAX_TRAIL);
+
+// ---------------------------------------------------------------------------
+// WEBGL SETUP
+// ---------------------------------------------------------------------------
+const canvas = document.getElementById('glCanvas');
+let gl = null;
+let prog = null;
+let locs = {};
+let bufs = {};
+let maxPointSize = 64;
+let animId = null;
+
+let lineProg = null;
+let lineLocs = {};
+let lineBufs = {};
+
+// Flash pool — each flash is a line snapshot that decays quickly
+const MAX_FLASHES     = 300;
+const MAX_FLASH_VERTS = MAX_FLASHES * 6;        // 6 verts (2 triangles) per flash
+const flashBuf = new Float32Array(MAX_FLASH_VERTS * 7); // ax,ay,bx,by,side,t,alpha per vert
+const flashX1  = new Float32Array(MAX_FLASHES);
+const flashY1  = new Float32Array(MAX_FLASHES);
+const flashX2  = new Float32Array(MAX_FLASHES);
+const flashY2  = new Float32Array(MAX_FLASHES);
+const flashAge = new Float32Array(MAX_FLASHES);
+const flashDur = new Float32Array(MAX_FLASHES);
+let   flashCount = 0;
+
+const VS_SRC = `
+attribute vec2  a_position;
+attribute float a_phase;
+attribute float a_luminosity;
+attribute float a_size;
+
+uniform vec2  u_resolution;
+uniform float u_baseGlow;
+uniform float u_ambientGlow;
+uniform float u_maxPointSize;
+
+varying float v_brightness;
+
+void main() {
+  vec2 clip = (a_position / u_resolution) * 2.0 - 1.0;
+  clip.y = -clip.y;
+  gl_Position = vec4(clip, 0.0, 1.0);
+
+  float sinVal   = max(0.0, sin(a_phase));
+  float blinkSig = sinVal * sinVal;
+  v_brightness   = a_luminosity * blinkSig * u_baseGlow + u_ambientGlow;
+
+  gl_PointSize = min(a_size, u_maxPointSize);
+}
+`;
+
+const FS_SRC = `
+precision mediump float;
+varying float v_brightness;
+uniform vec3 u_color;
+
+void main() {
+  vec2  coord = gl_PointCoord * 2.0 - 1.0;
+  float dist2 = dot(coord, coord);
+  float glow  = exp(-dist2 * 3.0);
+  if (glow < 0.004) discard;
+  gl_FragColor = vec4(u_color * v_brightness * glow, glow * v_brightness);
+}
+`;
+
+const LINE_VS_SRC = `
+attribute vec2  a_posA;
+attribute vec2  a_posB;
+attribute float a_side;
+attribute float a_t;
+attribute float a_alpha;
+uniform vec2    u_res;
+uniform float   u_hw;
+varying float   v_alpha;
+varying float   v_side;
+void main() {
+  vec2 pos = mix(a_posA, a_posB, a_t);
+  vec2 dir = a_posB - a_posA;
+  float len = length(dir);
+  if (len > 0.0) dir /= len;
+  vec2 perp = vec2(-dir.y, dir.x);
+  vec2 wp   = pos + perp * a_side * u_hw;
+  vec2 clip = (wp / u_res) * 2.0 - 1.0;
+  clip.y = -clip.y;
+  gl_Position = vec4(clip, 0.0, 1.0);
+  v_alpha = a_alpha;
+  v_side  = a_side;
+}`;
+
+const LINE_FS_SRC = `
+precision mediump float;
+varying float v_alpha;
+varying float v_side;
+void main() {
+  float g = exp(-v_side * v_side * 2.5);
+  gl_FragColor = vec4(1.0, 1.0, 1.0, v_alpha * g);
+}`;
+
+function compileShader(type, src) {
+  const sh = gl.createShader(type);
+  gl.shaderSource(sh, src);
+  gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+    console.error('Shader compile error:', gl.getShaderInfoLog(sh));
+    gl.deleteShader(sh);
+    return null;
+  }
+  return sh;
+}
+
+function initGL() {
+  gl = canvas.getContext('webgl', { alpha: false, antialias: false });
+  if (!gl) {
+    console.error('WebGL not supported');
+    return false;
+  }
+
+  const vs = compileShader(gl.VERTEX_SHADER,   VS_SRC);
+  const fs = compileShader(gl.FRAGMENT_SHADER, FS_SRC);
+  if (!vs || !fs) return false;
+
+  prog = gl.createProgram();
+  gl.attachShader(prog, vs);
+  gl.attachShader(prog, fs);
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    console.error('Program link error:', gl.getProgramInfoLog(prog));
+    return false;
+  }
+  gl.useProgram(prog);
+
+  // Attribute locations
+  locs.a_position   = gl.getAttribLocation(prog, 'a_position');
+  locs.a_phase      = gl.getAttribLocation(prog, 'a_phase');
+  locs.a_luminosity = gl.getAttribLocation(prog, 'a_luminosity');
+  locs.a_size       = gl.getAttribLocation(prog, 'a_size');
+
+  // Uniform locations
+  locs.u_resolution  = gl.getUniformLocation(prog, 'u_resolution');
+  locs.u_color       = gl.getUniformLocation(prog, 'u_color');
+  locs.u_baseGlow    = gl.getUniformLocation(prog, 'u_baseGlow');
+  locs.u_ambientGlow = gl.getUniformLocation(prog, 'u_ambientGlow');
+  locs.u_maxPointSize= gl.getUniformLocation(prog, 'u_maxPointSize');
+
+  // Create VBOs
+  bufs.position   = gl.createBuffer();
+  bufs.phase      = gl.createBuffer();
+  bufs.luminosity = gl.createBuffer();
+  bufs.size       = gl.createBuffer();
+
+  // Query max point size
+  const range = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE);
+  maxPointSize = range[1];
+
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+
+  // --- Line program ---
+  const lvs = compileShader(gl.VERTEX_SHADER,   LINE_VS_SRC);
+  const lfs = compileShader(gl.FRAGMENT_SHADER, LINE_FS_SRC);
+  lineProg = gl.createProgram();
+  gl.attachShader(lineProg, lvs);
+  gl.attachShader(lineProg, lfs);
+  gl.linkProgram(lineProg);
+
+  lineLocs.a_posA  = gl.getAttribLocation(lineProg,  'a_posA');
+  lineLocs.a_posB  = gl.getAttribLocation(lineProg,  'a_posB');
+  lineLocs.a_side  = gl.getAttribLocation(lineProg,  'a_side');
+  lineLocs.a_t     = gl.getAttribLocation(lineProg,  'a_t');
+  lineLocs.a_alpha = gl.getAttribLocation(lineProg,  'a_alpha');
+  lineLocs.u_res   = gl.getUniformLocation(lineProg, 'u_res');
+  lineLocs.u_hw    = gl.getUniformLocation(lineProg, 'u_hw');
+
+  lineBufs.flash = gl.createBuffer();
+
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// CANVAS RESIZE
+// ---------------------------------------------------------------------------
+function resizeCanvas() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  canvas.width  = w;
+  canvas.height = h;
+  if (gl) gl.viewport(0, 0, w, h);
+
+  // Clamp existing bug positions
+  for (let i = 0; i < CONFIG.bugCount; i++) {
+    pos[i*2]   = Math.max(20, Math.min(w - 20, pos[i*2]));
+    pos[i*2+1] = Math.max(20, Math.min(h - 20, pos[i*2+1]));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SIMULATION INIT / RESET
+// ---------------------------------------------------------------------------
+function initBug(i) {
+  const w = canvas.width  || window.innerWidth;
+  const h = canvas.height || window.innerHeight;
+
+  pos[i*2]   = 20 + Math.random() * (w - 40);
+  pos[i*2+1] = 20 + Math.random() * (h - 40);
+  target[i*2]   = pos[i*2];
+  target[i*2+1] = pos[i*2+1];
+  vel[i*2]   = 0;
+  vel[i*2+1] = 0;
+  phase[i]   = Math.random() * TWO_PI;
+  freq[i]    = CONFIG.blinkFreqMin + Math.random() * (CONFIG.blinkFreqMax - CONFIG.blinkFreqMin);
+  lum[i]     = (CONFIG.lumMin + Math.random() * (CONFIG.lumMax - CONFIG.lumMin)) * 0.5;
+  state[i]   = RESTING;
+}
+
+function fullReset() {
+  for (let i = 0; i < MAX_BUGS; i++) initBug(i);
+  orb.active     = false;
+  orb.phase      = 'collecting';
+  orb.size       = 0;
+  orb.brightness = 0;
+  orb.elapsed    = 0;
+  frameCount     = 0;
+  flashCount     = 0;
+  convergencePending     = false;
+  convergencePendingTime = 0;
+  trailCount             = 0;
+  trailSpawnTick         = 0;
+  arrivedCount    = 0;
+  convergingTotal = 0;
+  numberEl.style.opacity = '0';
+
+  // Record the highest frequency actually assigned so convergence has
+  // a deterministic, directional target rather than a drifting mean.
+  initMaxFreq = 0;
+  const n = CONFIG.bugCount;
+  for (let i = 0; i < n; i++) {
+    if (freq[i] > initMaxFreq) initMaxFreq = freq[i];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SIMULATION UPDATE
+// ---------------------------------------------------------------------------
+function dist2(ax, ay, bx, by) {
+  const dx = ax - bx, dy = ay - by;
+  return dx*dx + dy*dy;
+}
+
+function updateSimulation(dt) {
+  const n    = CONFIG.bugCount;
+  const w    = canvas.width;
+  const h    = canvas.height;
+  const dtS  = Math.min(dt, 0.05);   // cap spike
+
+  // 1. Phase advance
+  for (let i = 0; i < n; i++) {
+    phase[i] += freq[i] * TWO_PI * dtS;
+    if (phase[i] >= TWO_PI) phase[i] -= TWO_PI;
+  }
+
+  // 2. Sync tick (every syncInterval frames, resting only)
+  if (frameCount % CONFIG.syncInterval === 0) {
+    const sr2 = CONFIG.syncRadius * CONFIG.syncRadius;
+    for (let i = 0; i < n; i++) {
+      if (state[i] !== RESTING) continue;
+      let bestDist2 = Infinity, bestJ = -1;
+      const xi = pos[i*2], yi = pos[i*2+1];
+      for (let j = 0; j < n; j++) {
+        if (j === i) continue;
+        const d2 = dist2(xi, yi, pos[j*2], pos[j*2+1]);
+        if (d2 < sr2 && d2 < bestDist2) { bestDist2 = d2; bestJ = j; }
+      }
+      if (bestJ >= 0) {
+        const diff = freq[bestJ] - freq[i];
+        if (diff > 0 || Math.abs(diff) < CONFIG.freqSyncBand) {
+          // Case A (diff > 0): neighbor is faster — nudge up.
+          // Case B (|diff| < band): effectively equal — nudge up to prevent stagnation.
+          freq[i] += Math.random() * CONFIG.blinkSyncRate;
+          freq[i]  = Math.min(initMaxFreq, freq[i]);
+        }
+      }
+    }
+  }
+
+  // 3. Luminosity update (resting only)
+  {
+    const sr2 = CONFIG.syncRadius * CONFIG.syncRadius;
+    for (let i = 0; i < n; i++) {
+      if (state[i] !== RESTING) continue;
+      const xi = pos[i*2], yi = pos[i*2+1];
+      let bestDist2 = Infinity, bestJ = -1;
+      for (let j = 0; j < n; j++) {
+        if (j === i) continue;
+        const d2 = dist2(xi, yi, pos[j*2], pos[j*2+1]);
+        if (d2 < sr2 && d2 < bestDist2) { bestDist2 = d2; bestJ = j; }
+      }
+      if (bestJ >= 0) {
+        let pd = Math.abs(phase[i] - phase[bestJ]);
+        if (pd > Math.PI) pd = TWO_PI - pd;  // wrap to [0, π]
+        lum[i] += CONFIG.lumSyncRate * Math.cos(pd);
+      } else {
+        lum[i] -= CONFIG.lumDecayRate;
+      }
+      lum[i] = Math.max(CONFIG.lumMin, Math.min(1.0, lum[i]));
+    }
+  }
+
+  // 4. Movement decision (resting only) — frozen during convergence pending
+  if (!convergencePending) {
+    const nr2  = CONFIG.neighborRadius   * CONFIG.neighborRadius;
+    const pb2  = CONFIG.passingBugRadius * CONFIG.passingBugRadius;
+    const bugSize = CONFIG.bugBaseSize + 0.5 * CONFIG.bugSizeScale; // approx average
+    for (let i = 0; i < n; i++) {
+      if (state[i] !== RESTING) continue;
+      if (freq[i] >= 0.7 * CONFIG.blinkFreqMax) continue;  // near-synced bugs won't move
+      const xi = pos[i*2], yi = pos[i*2+1];
+      let p = CONFIG.restMoveProbability;
+      let closestPasserDist2 = Infinity, closestPasser = -1;
+
+      for (let j = 0; j < n; j++) {
+        if (j === i) continue;
+        const d2 = dist2(xi, yi, pos[j*2], pos[j*2+1]);
+        if (state[j] === RESTING && d2 < nr2) {
+          p *= (1 - CONFIG.neighborRestFactor);
+        }
+        if ((state[j] === MOVING || state[j] === CONVERGING) && d2 < pb2 && d2 < closestPasserDist2) {
+          closestPasserDist2 = d2;
+          closestPasser = j;
+        }
+      }
+
+      if (closestPasser >= 0) {
+        // Contact event — follow or spook based on frequency sync
+        if (Math.random() < CONFIG.passingBugMoveProbability) {
+          const j = closestPasser;
+          const inSync = Math.abs(freq[i] - freq[j]) < CONFIG.followSyncThreshold;
+          let tx, ty, spd;
+
+          if (inSync) {
+            // Follow: head to a point 1.6 bug-widths from the passer's target
+            const angle  = Math.random() * TWO_PI;
+            const offset = bugSize * 1.6;
+            tx = Math.max(20, Math.min(w - 20, target[j*2]   + Math.cos(angle) * offset));
+            ty = Math.max(20, Math.min(h - 20, target[j*2+1] + Math.sin(angle) * offset));
+          } else {
+            // Spook: flee up to 12 bug-lengths, reset luminosity and blink
+            const maxDist = bugSize * 12;
+            const angle   = Math.random() * TWO_PI;
+            const dist    = (0.3 + Math.random() * 0.7) * maxDist;
+            tx = Math.max(20, Math.min(w - 20, xi + Math.cos(angle) * dist));
+            ty = Math.max(20, Math.min(h - 20, yi + Math.sin(angle) * dist));
+            lum[i]   = CONFIG.lumMin;
+            phase[i] = Math.random() * TWO_PI;
+            freq[i]  = CONFIG.blinkFreqMin + Math.random() * (CONFIG.blinkFreqMax - CONFIG.blinkFreqMin);
+          }
+
+          spd = CONFIG.moveSpeedMin + Math.random() * (CONFIG.moveSpeedMax - CONFIG.moveSpeedMin);
+          const dx = tx - xi, dy = ty - yi;
+          const len = Math.sqrt(dx*dx + dy*dy) || 1;
+          vel[i*2]     = (dx / len) * spd;
+          vel[i*2+1]   = (dy / len) * spd;
+          target[i*2]  = tx;
+          target[i*2+1]= ty;
+          state[i]     = MOVING;
+        }
+      } else if (Math.random() < p) {
+        // No passer nearby — occasional spontaneous wander
+        const tx = 20 + Math.random() * (w - 40);
+        const ty = 20 + Math.random() * (h - 40);
+        target[i*2]   = tx;
+        target[i*2+1] = ty;
+        const spd = CONFIG.moveSpeedMin + Math.random() * (CONFIG.moveSpeedMax - CONFIG.moveSpeedMin);
+        const dx  = tx - xi, dy = ty - yi;
+        const len = Math.sqrt(dx*dx + dy*dy) || 1;
+        vel[i*2]   = (dx / len) * spd;
+        vel[i*2+1] = (dy / len) * spd;
+        state[i]   = MOVING;
+      }
+    }
+  }
+
+  // 5. Position update — spiral for CONVERGING, simple integration for MOVING
+  for (let i = 0; i < n; i++) {
+    if (state[i] === RESTING) continue;
+
+    if (state[i] === CONVERGING) {
+      const toX = orb.x - pos[i*2];
+      const toY = orb.y - pos[i*2+1];
+      const dist = Math.sqrt(toX*toX + toY*toY) || 0.001;
+
+      if (dist < 5) {
+        // Bug absorbed — hide it and grow the orb
+        state[i] = ABSORBED;
+        arrivedCount++;
+        orb.size = CONFIG.orbMaxSize * (0.15 + 0.85 * arrivedCount / convergingTotal);
+        if (arrivedCount >= convergingTotal) {
+          orb.phase   = 'pause';
+          orb.elapsed = 0;
+        }
+        continue;
+      }
+
+      // Radial inward unit vector
+      const rx = toX / dist, ry = toY / dist;
+      // Tangential unit vector (CCW: rotate radial 90° counter-clockwise)
+      const tx = -ry, ty = rx;
+
+      // Tangential weight falls off as bug nears orb
+      const tangFactor = Math.min(dist / 200, 1) * CONFIG.spiralStrength;
+
+      // Combine and normalize to keep constant speed
+      const nx   = rx + tx * tangFactor;
+      const ny   = ry + ty * tangFactor;
+      const nlen = Math.sqrt(nx*nx + ny*ny);
+      vel[i*2]   = (nx / nlen) * convSpeed[i];
+      vel[i*2+1] = (ny / nlen) * convSpeed[i];
+
+      pos[i*2]   += vel[i*2]   * dtS;
+      pos[i*2+1] += vel[i*2+1] * dtS;
+    } else {
+      // MOVING — existing simple integration
+      pos[i*2]   += vel[i*2]   * dtS;
+      pos[i*2+1] += vel[i*2+1] * dtS;
+
+      const dx = target[i*2]   - pos[i*2];
+      const dy = target[i*2+1] - pos[i*2+1];
+      if (dx*dx + dy*dy < 4) {
+        pos[i*2]   = target[i*2];
+        pos[i*2+1] = target[i*2+1];
+        vel[i*2]   = 0;
+        vel[i*2+1] = 0;
+        state[i]   = RESTING;
+      }
+    }
+  }
+
+  // 6. Convergence — Phase 1: detect threshold, freeze bugs
+  //                  Phase 2: count down delay, then spiral all bugs in
+  if (!orb.active && frameCount > CONFIG.initialLockout) {
+
+    if (!convergencePending) {
+      let syncCount = 0;
+      for (let i = 0; i < n; i++) {
+        if (Math.abs(freq[i] - initMaxFreq) < CONFIG.freqSyncBand) syncCount++;
+      }
+
+      if (syncCount / n >= CONFIG.convergenceThreshold) {
+        convergencePending     = true;
+        convergencePendingTime = 0;
+        // Immediately freeze any wandering bugs
+        for (let i = 0; i < n; i++) {
+          if (state[i] === MOVING) {
+            vel[i*2] = vel[i*2+1] = 0;
+            state[i] = RESTING;
+          }
+        }
+      }
+
+    } else {
+      convergencePendingTime += dtS;
+
+      if (convergencePendingTime >= CONFIG.convergenceDelay) {
+        convergencePending = false;
+
+        const cx = 60 + Math.random() * (w - 120);
+        const cy = 60 + Math.random() * (h - 120);
+        orb.x      = cx;
+        orb.y      = cy;
+        orb.active     = true;
+        orb.phase      = 'collecting';
+        orb.size       = CONFIG.orbMaxSize * 0.15;   // starts small; grows with arrivals
+        orb.brightness = 1.0;                         // immediately fully lit
+        orb.elapsed    = 0;
+        arrivedCount    = 0;
+        convergingTotal = n;
+
+        const speedRange = CONFIG.convergenceSpeedMax - CONFIG.convergenceSpeedMin;
+        for (let i = 0; i < n; i++) {
+          convSpeed[i]  = CONFIG.convergenceSpeedMin + Math.random() * speedRange;
+          target[i*2]   = cx;
+          target[i*2+1] = cy;
+          // Initial velocity pointing straight in; spiral is applied dynamically in step 5
+          const dx  = cx - pos[i*2], dy = cy - pos[i*2+1];
+          const len = Math.sqrt(dx*dx + dy*dy) || 1;
+          vel[i*2]   = (dx / len) * convSpeed[i];
+          vel[i*2+1] = (dy / len) * convSpeed[i];
+          state[i]   = CONVERGING;
+        }
+      }
+    }
+  }
+
+  // 6.5. Trail particles — spawn from fast converging bugs, age existing
+  {
+    // Age / expire existing particles (swap-remove for O(1))
+    let k = 0;
+    while (k < trailCount) {
+      trailAge[k] += dtS;
+      if (trailAge[k] >= trailLife[k]) {
+        const last = trailCount - 1;
+        trailPos[k*2]   = trailPos[last*2];
+        trailPos[k*2+1] = trailPos[last*2+1];
+        trailAge[k]     = trailAge[last];
+        trailLife[k]    = trailLife[last];
+        trailCount--;
+      } else {
+        k++;
+      }
+    }
+
+    // Spawn from fast bugs (every 3 frames to keep particle count manageable)
+    trailSpawnTick = (trailSpawnTick + 1) % 3;
+    if (trailSpawnTick === 0) {
+      const speedCutoff = CONFIG.convergenceSpeedMin +
+        (CONFIG.convergenceSpeedMax - CONFIG.convergenceSpeedMin) * CONFIG.trailSpeedCutoff;
+      for (let i = 0; i < n; i++) {
+        if (state[i] === CONVERGING && convSpeed[i] > speedCutoff && trailCount < MAX_TRAIL) {
+          trailPos[trailCount*2]   = pos[i*2];
+          trailPos[trailCount*2+1] = pos[i*2+1];
+          trailAge[trailCount]     = 0;
+          trailLife[trailCount]    = CONFIG.trailLifetime;
+          trailCount++;
+        }
+      }
+    }
+  }
+
+  // 7. Orb update — 'collecting' → 'pause' (3 s) → 'fade' (8 s) → fullReset()
+  if (orb.active) {
+    if (orb.phase === 'collecting') {
+      orb.brightness = 1.0;
+      // orb.size updated in step 5 on each bug arrival
+
+    } else if (orb.phase === 'pause') {
+      orb.elapsed += dtS;
+      if (orb.elapsed >= 3.0) {
+        orb.phase   = 'fade';
+        orb.elapsed = 0;
+        // Position and reveal the "11" text
+        numberEl.style.left     = orb.x + 'px';
+        numberEl.style.top      = orb.y + 'px';
+        numberEl.style.fontSize = Math.round(orb.size * 0.65) + 'px';
+        numberEl.style.opacity  = '1';
+      }
+
+    } else if (orb.phase === 'fade') {
+      orb.elapsed += dtS;
+      const t = Math.min(orb.elapsed / CONFIG.orbFadeDuration, 1.0);
+      orb.brightness = 1.0 - t;
+      orb.size       = CONFIG.orbMaxSize;   // stays full size during fade
+      // Fade "11" out in 1 second
+      numberEl.style.opacity = Math.max(0, 1.0 - orb.elapsed).toFixed(3);
+      if (t >= 1.0) {
+        numberEl.style.opacity = '0';
+        fullReset();
+      }
+    }
+  }
+
+  // 8. Flash — age existing, compact expired, spawn new
+  {
+    let fc = 0;
+    for (let k = 0; k < flashCount; k++) {
+      flashAge[k] += dtS;
+      if (flashAge[k] < flashDur[k]) {
+        flashX1[fc] = flashX1[k];  flashY1[fc] = flashY1[k];
+        flashX2[fc] = flashX2[k];  flashY2[fc] = flashY2[k];
+        flashAge[fc] = flashAge[k]; flashDur[fc] = flashDur[k];
+        fc++;
+      }
+    }
+    flashCount = fc;
+
+    const thresh = CONFIG.lineSyncThreshold;
+    const sr2    = CONFIG.syncRadius * CONFIG.syncRadius;
+    for (let i = 0; i < n && flashCount < MAX_FLASHES - 1; i++) {
+      if (state[i] !== RESTING) continue;
+      for (let j = i + 1; j < n && flashCount < MAX_FLASHES - 1; j++) {
+        if (state[j] !== RESTING) continue;
+        if (dist2(pos[i*2], pos[i*2+1], pos[j*2], pos[j*2+1]) > sr2) continue;
+        let pd = Math.abs(phase[i] - phase[j]);
+        if (pd > Math.PI) pd = TWO_PI - pd;
+        if (pd >= thresh) continue;
+        if (Math.random() >= CONFIG.flashProbability) continue;
+        const k = flashCount++;
+        flashX1[k] = pos[i*2];   flashY1[k] = pos[i*2+1];
+        flashX2[k] = pos[j*2];   flashY2[k] = pos[j*2+1];
+        flashAge[k] = 0;
+        flashDur[k] = CONFIG.flashDuration * (0.6 + Math.random() * 0.8);
+      }
+    }
+  }
+
+  frameCount++;
+}
+
+// ---------------------------------------------------------------------------
+// RENDER
+// ---------------------------------------------------------------------------
+function uploadBuffer(buf, data, attrib, size) {
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(attrib);
+  gl.vertexAttribPointer(attrib, size, gl.FLOAT, false, 0, 0);
+}
+
+function render() {
+  const n = CONFIG.bugCount;
+  const w = canvas.width;
+  const h = canvas.height;
+
+  gl.clearColor(0, 0, 0, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+
+  gl.useProgram(prog);
+  gl.uniform2f(locs.u_resolution,   w, h);
+  gl.uniform3f(locs.u_color,        0.961, 0.929, 0.820); // #F5EDD1 — matches heading
+  gl.uniform1f(locs.u_baseGlow,     CONFIG.baseGlow);
+  gl.uniform1f(locs.u_ambientGlow,  CONFIG.ambientGlow);
+  gl.uniform1f(locs.u_maxPointSize, maxPointSize);
+
+  // Trail particles (rendered before bugs so bugs appear on top)
+  if (trailCount > 0) {
+    for (let k = 0; k < trailCount; k++) {
+      const t = trailAge[k] / trailLife[k];          // 0 (fresh) → 1 (expired)
+      a_trail_pos[k*2]   = trailPos[k*2];
+      a_trail_pos[k*2+1] = trailPos[k*2+1];
+      a_trail_ph[k]      = Math.PI * 0.5;            // fixed peak → always lit
+      a_trail_lum[k]     = (1.0 - t) * 0.55;        // fade out, max 55% brightness
+      a_trail_sz[k]      = CONFIG.bugBaseSize * (1.0 - t * 0.5); // shrink as it ages
+    }
+    uploadBuffer(bufs.position,   a_trail_pos.subarray(0, trailCount*2), locs.a_position,   2);
+    uploadBuffer(bufs.phase,      a_trail_ph.subarray(0, trailCount),    locs.a_phase,      1);
+    uploadBuffer(bufs.luminosity, a_trail_lum.subarray(0, trailCount),   locs.a_luminosity, 1);
+    uploadBuffer(bufs.size,       a_trail_sz.subarray(0, trailCount),    locs.a_size,       1);
+    gl.drawArrays(gl.POINTS, 0, trailCount);
+  }
+
+  // Build upload arrays for bugs
+  // Moving/converging bugs hold peak phase (sin²(π/2)=1) so they stay fully lit
+  const HALF_PI = Math.PI * 0.5;
+  for (let i = 0; i < n; i++) {
+    if (state[i] === ABSORBED) {
+      a_position[i*2]   = -1000;   // off-screen
+      a_position[i*2+1] = -1000;
+      a_phase[i]        = 0;
+      a_luminosity[i]   = 0;
+      a_size[i]         = 0;
+      continue;
+    }
+    a_position[i*2]   = pos[i*2];
+    a_position[i*2+1] = pos[i*2+1];
+    const moving      = state[i] !== RESTING;
+    a_phase[i]        = moving ? HALF_PI : phase[i];
+    a_luminosity[i]   = moving ? 1.0 : lum[i];
+    a_size[i]         = CONFIG.bugBaseSize + (moving ? 1.0 : lum[i]) * CONFIG.bugSizeScale;
+  }
+
+  uploadBuffer(bufs.position,   a_position.subarray(0, n*2), locs.a_position,   2);
+  uploadBuffer(bufs.phase,      a_phase.subarray(0, n),      locs.a_phase,      1);
+  uploadBuffer(bufs.luminosity, a_luminosity.subarray(0, n), locs.a_luminosity, 1);
+  uploadBuffer(bufs.size,       a_size.subarray(0, n),       locs.a_size,       1);
+
+  gl.drawArrays(gl.POINTS, 0, n);
+
+  // Flash lines — rendered as quads with gaussian soft edge
+  if (flashCount > 0) {
+    const SIDES = [1, -1,  1,   1, -1, -1];
+    const TS    = [0,  0,  1,   1,  0,  1];
+    let vi = 0;
+
+    for (let k = 0; k < flashCount; k++) {
+      const t     = flashAge[k] / flashDur[k];
+      const alpha = CONFIG.flashMaxAlpha * (1.0 - t) * (1.0 - t);
+      for (let v = 0; v < 6; v++) {
+        flashBuf[vi++] = flashX1[k];
+        flashBuf[vi++] = flashY1[k];
+        flashBuf[vi++] = flashX2[k];
+        flashBuf[vi++] = flashY2[k];
+        flashBuf[vi++] = SIDES[v];
+        flashBuf[vi++] = TS[v];
+        flashBuf[vi++] = alpha;
+      }
+    }
+
+    const vc     = flashCount * 6;
+    const stride = 7 * 4;
+    gl.useProgram(lineProg);
+    gl.uniform2f(lineLocs.u_res, w, h);
+    gl.uniform1f(lineLocs.u_hw, CONFIG.flashHalfWidth);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, lineBufs.flash);
+    gl.bufferData(gl.ARRAY_BUFFER, flashBuf.subarray(0, vi), gl.DYNAMIC_DRAW);
+
+    gl.enableVertexAttribArray(lineLocs.a_posA);
+    gl.vertexAttribPointer(lineLocs.a_posA, 2, gl.FLOAT, false, stride, 0);
+    gl.enableVertexAttribArray(lineLocs.a_posB);
+    gl.vertexAttribPointer(lineLocs.a_posB, 2, gl.FLOAT, false, stride, 2 * 4);
+    gl.enableVertexAttribArray(lineLocs.a_side);
+    gl.vertexAttribPointer(lineLocs.a_side, 1, gl.FLOAT, false, stride, 4 * 4);
+    gl.enableVertexAttribArray(lineLocs.a_t);
+    gl.vertexAttribPointer(lineLocs.a_t, 1, gl.FLOAT, false, stride, 5 * 4);
+    gl.enableVertexAttribArray(lineLocs.a_alpha);
+    gl.vertexAttribPointer(lineLocs.a_alpha, 1, gl.FLOAT, false, stride, 6 * 4);
+
+    gl.drawArrays(gl.TRIANGLES, 0, vc);
+
+    // Restore bug program for orb draw
+    gl.useProgram(prog);
+  }
+
+  // Orb
+  if (orb.active) {
+    orb_pos[0] = orb.x;
+    orb_pos[1] = orb.y;
+    orb_ph[0]  = Math.PI * 0.5;  // fixed peak phase → always fully lit
+    orb_lum[0] = orb.brightness;
+    orb_sz[0]  = orb.size;
+
+    uploadBuffer(bufs.position,   orb_pos, locs.a_position,   2);
+    uploadBuffer(bufs.phase,      orb_ph,  locs.a_phase,      1);
+    uploadBuffer(bufs.luminosity, orb_lum, locs.a_luminosity, 1);
+    uploadBuffer(bufs.size,       orb_sz,  locs.a_size,       1);
+
+    gl.drawArrays(gl.POINTS, 0, 1);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// MAIN LOOP
+// ---------------------------------------------------------------------------
+let lastTime = 0;
+
+function loop(ts) {
+  animId = requestAnimationFrame(loop);
+  const dt = (ts - lastTime) / 1000;
+  lastTime = ts;
+  updateSimulation(dt);
+  render();
+}
+
+function start() {
+  // Double-rAF to get a valid first dt
+  requestAnimationFrame(ts0 => {
+    lastTime = ts0;
+    requestAnimationFrame(ts1 => {
+      lastTime = ts1;
+      loop(ts1);
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// CONTEXT LOSS
+// ---------------------------------------------------------------------------
+canvas.addEventListener('webglcontextlost', e => {
+  e.preventDefault();
+  if (animId !== null) { cancelAnimationFrame(animId); animId = null; }
+}, false);
+
+canvas.addEventListener('webglcontextrestored', () => {
+  if (initGL()) start();
+}, false);
+
+// ---------------------------------------------------------------------------
+// DEBUG PANEL
+// ---------------------------------------------------------------------------
+function buildDebugPanel() {
+  const panel = document.getElementById('debug-panel');
+
+  for (const p of DEBUG_PARAMS) {
+    const row = document.createElement('div');
+    row.className = 'debug-row';
+
+    const lbl = document.createElement('label');
+    lbl.textContent = p.label;
+    lbl.title = p.key;
+
+    const slider = document.createElement('input');
+    slider.type  = 'range';
+    slider.min   = p.min;
+    slider.max   = p.max;
+    slider.step  = p.step;
+    slider.value = CONFIG[p.key];
+
+    const valEl = document.createElement('span');
+    valEl.className = 'val';
+    valEl.textContent = Number(CONFIG[p.key]).toFixed(p.decimals);
+
+    slider.addEventListener('input', () => {
+      let v = parseFloat(slider.value);
+
+      // Mutual clamp
+      if (p.key === 'blinkFreqMin')  v = Math.min(v, CONFIG.blinkFreqMax);
+      if (p.key === 'blinkFreqMax')  v = Math.max(v, CONFIG.blinkFreqMin);
+      if (p.key === 'moveSpeedMin')  v = Math.min(v, CONFIG.moveSpeedMax);
+      if (p.key === 'moveSpeedMax')  v = Math.max(v, CONFIG.moveSpeedMin);
+
+      CONFIG[p.key] = v;
+      slider.value  = v;
+      valEl.textContent = v.toFixed(p.decimals);
+
+      if (p.key === 'bugCount') fullReset();
+    });
+
+    row.appendChild(lbl);
+    row.appendChild(slider);
+    row.appendChild(valEl);
+    panel.appendChild(row);
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'd' || e.key === 'D') {
+    document.getElementById('debug-panel').classList.toggle('visible');
+  }
+});
+
+// ---------------------------------------------------------------------------
+// RESIZE
+// ---------------------------------------------------------------------------
+window.addEventListener('resize', resizeCanvas);
+
+// ---------------------------------------------------------------------------
+// BOOT
+// ---------------------------------------------------------------------------
+resizeCanvas();
+buildDebugPanel();
+
+if (initGL()) {
+  fullReset();
+  start();
+} else {
+  document.body.style.background = '#111';
+  const msg = document.createElement('p');
+  msg.style.cssText = 'color:#F5EDD1;font-family:sans-serif;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%)';
+  msg.textContent = 'WebGL is not supported in this browser.';
+  document.body.appendChild(msg);
+}
+</script>
+</body>
+</html>
