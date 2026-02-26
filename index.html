@@ -301,6 +301,7 @@ const CONFIG = {
   bugBaseSize:           9,
   bugSizeScale:          14,
   initialLockout:        1800,
+  spawnLockout:          1800,
   lineSyncThreshold:     0.785,
   flashMaxAlpha:         0.9,
   flashDuration:         0.14,
@@ -339,6 +340,7 @@ const DEBUG_PARAMS = [
   { key: 'flashDuration',        label: 'Flash Duration (s)',   min: 0.02, max: 1.0,  step: 0.01, decimals: 2 },
   { key: 'flashProbability',     label: 'Flash Probability',    min: 0,    max: 0.005,step: 0.0001,decimals:4 },
   { key: 'flashHalfWidth',       label: 'Flash Width (px)',     min: 0.05, max: 5,    step: 0.05, decimals: 2 },
+  { key: 'spawnLockout',         label: 'Spawn Lockout (frames)', min: 0, max: 3600, step: 60,   decimals: 0 },
 ];
 
 // ---------------------------------------------------------------------------
@@ -680,7 +682,7 @@ function updateSimulation(dt) {
   }
 
   // 2. Sync tick (every syncInterval frames, resting only)
-  if (frameCount % CONFIG.syncInterval === 0) {
+  if (frameCount >= CONFIG.spawnLockout && frameCount % CONFIG.syncInterval === 0) {
     const sr2 = CONFIG.syncRadius * CONFIG.syncRadius;
     for (let i = 0; i < n; i++) {
       if (state[i] !== RESTING) continue;
@@ -704,7 +706,7 @@ function updateSimulation(dt) {
   }
 
   // 3. Luminosity update (resting only)
-  {
+  if (frameCount >= CONFIG.spawnLockout) {
     const sr2 = CONFIG.syncRadius * CONFIG.syncRadius;
     for (let i = 0; i < n; i++) {
       if (state[i] !== RESTING) continue;
@@ -727,7 +729,7 @@ function updateSimulation(dt) {
   }
 
   // 4. Movement decision (resting only) — frozen during convergence pending
-  if (!convergencePending) {
+  if (!convergencePending && frameCount >= CONFIG.spawnLockout) {
     const nr2  = CONFIG.neighborRadius   * CONFIG.neighborRadius;
     const pb2  = CONFIG.passingBugRadius * CONFIG.passingBugRadius;
     const bugSize = CONFIG.bugBaseSize + 0.5 * CONFIG.bugSizeScale; // approx average
@@ -992,6 +994,7 @@ function updateSimulation(dt) {
     }
     flashCount = fc;
 
+    if (frameCount >= CONFIG.spawnLockout) {
     const thresh = CONFIG.lineSyncThreshold;
     const sr2    = CONFIG.syncRadius * CONFIG.syncRadius;
     for (let i = 0; i < n && flashCount < MAX_FLASHES - 1; i++) {
@@ -1010,6 +1013,7 @@ function updateSimulation(dt) {
         flashDur[k] = CONFIG.flashDuration * (0.6 + Math.random() * 0.8);
       }
     }
+    } // end spawnLockout guard
   }
 
   frameCount++;
