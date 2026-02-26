@@ -306,7 +306,8 @@ const CONFIG = {
   flashMaxAlpha:         0.9,
   flashDuration:         0.35,
   flashProbability:      0.0003,
-  signalSize:            1,
+  signalSize:            2,
+  signalParticleCount:   3,
 };
 
 const DEBUG_PARAMS = [
@@ -340,6 +341,7 @@ const DEBUG_PARAMS = [
   { key: 'flashDuration',        label: 'Signal Travel Time (s)',min: 0.05,max: 2.0,  step: 0.05, decimals: 2 },
   { key: 'flashProbability',     label: 'Signal Probability',   min: 0,    max: 0.005,step: 0.0001,decimals:4 },
   { key: 'signalSize',           label: 'Signal Size',          min: 4,    max: 60,   step: 1,    decimals: 0 },
+  { key: 'signalParticleCount', label: 'Signal Particle Count', min: 1,   max: 8,    step: 1,    decimals: 0 },
   { key: 'spawnLockout',         label: 'Spawn Lockout (frames)', min: 0, max: 3600, step: 60,   decimals: 0 },
 ];
 
@@ -955,11 +957,16 @@ function updateSimulation(dt) {
         if (pd > Math.PI) pd = TWO_PI - pd;
         if (pd >= thresh) continue;
         if (Math.random() >= CONFIG.flashProbability) continue;
-        const k = flashCount++;
-        flashX1[k] = pos[i*2];   flashY1[k] = pos[i*2+1];
-        flashX2[k] = pos[j*2];   flashY2[k] = pos[j*2+1];
-        flashAge[k] = 0;
-        flashDur[k] = CONFIG.flashDuration * (0.6 + Math.random() * 0.8);
+        const dur = CONFIG.flashDuration * (0.6 + Math.random() * 0.8);
+        const gap = dur * 0.12;
+        const np  = CONFIG.signalParticleCount;
+        for (let p = 0; p < np && flashCount < MAX_FLASHES - 1; p++) {
+          const k = flashCount++;
+          flashX1[k] = pos[i*2];   flashY1[k] = pos[i*2+1];
+          flashX2[k] = pos[j*2];   flashY2[k] = pos[j*2+1];
+          flashAge[k] = p * gap;
+          flashDur[k] = dur;
+        }
       }
     }
     } // end spawnLockout guard
