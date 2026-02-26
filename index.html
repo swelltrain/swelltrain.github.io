@@ -304,9 +304,9 @@ const CONFIG = {
   spawnLockout:          1800,
   lineSyncThreshold:     0.785,
   flashMaxAlpha:         0.9,
-  flashDuration:         0.14,
+  flashDuration:         0.35,
   flashProbability:      0.0003,
-  flashHalfWidth:        0.35,
+  signalSize:            1,
 };
 
 const DEBUG_PARAMS = [
@@ -335,11 +335,11 @@ const DEBUG_PARAMS = [
   { key: 'baseGlow',             label: 'Base Glow',            min: 0,    max: 3.0,  step: 0.05, decimals: 2 },
   { key: 'ambientGlow',          label: 'Ambient Glow',         min: 0,    max: 1.0,  step: 0.01, decimals: 2 },
   { key: 'bugBaseSize',          label: 'Bug Base Size',        min: 4,    max: 50,   step: 1,    decimals: 0 },
-  { key: 'lineSyncThreshold',    label: 'Line Sync Threshold',  min: 0,    max: 3.14, step: 0.05, decimals: 2 },
-  { key: 'flashMaxAlpha',        label: 'Flash Max Alpha',      min: 0,    max: 1.0,  step: 0.01, decimals: 2 },
-  { key: 'flashDuration',        label: 'Flash Duration (s)',   min: 0.02, max: 1.0,  step: 0.01, decimals: 2 },
-  { key: 'flashProbability',     label: 'Flash Probability',    min: 0,    max: 0.005,step: 0.0001,decimals:4 },
-  { key: 'flashHalfWidth',       label: 'Flash Width (px)',     min: 0.05, max: 5,    step: 0.05, decimals: 2 },
+  { key: 'lineSyncThreshold',    label: 'Signal Sync Threshold',min: 0,    max: 3.14, step: 0.05, decimals: 2 },
+  { key: 'flashMaxAlpha',        label: 'Signal Brightness',    min: 0,    max: 1.0,  step: 0.01, decimals: 2 },
+  { key: 'flashDuration',        label: 'Signal Travel Time (s)',min: 0.05,max: 2.0,  step: 0.05, decimals: 2 },
+  { key: 'flashProbability',     label: 'Signal Probability',   min: 0,    max: 0.005,step: 0.0001,decimals:4 },
+  { key: 'signalSize',           label: 'Signal Size',          min: 4,    max: 60,   step: 1,    decimals: 0 },
   { key: 'spawnLockout',         label: 'Spawn Lockout (frames)', min: 0, max: 3600, step: 60,   decimals: 0 },
 ];
 
@@ -430,14 +430,13 @@ let bufs = {};
 let maxPointSize = 64;
 let animId = null;
 
-let lineProg = null;
-let lineLocs = {};
-let lineBufs = {};
-
 // Flash pool — each flash is a line snapshot that decays quickly
 const MAX_FLASHES     = 300;
-const MAX_FLASH_VERTS = MAX_FLASHES * 6;        // 6 verts (2 triangles) per flash
-const flashBuf = new Float32Array(MAX_FLASH_VERTS * 7); // ax,ay,bx,by,side,t,alpha per vert
+const a_sig_pos = new Float32Array(MAX_FLASHES * 2);
+const a_sig_ph  = new Float32Array(MAX_FLASHES);
+const a_sig_lum = new Float32Array(MAX_FLASHES);
+const a_sig_sz  = new Float32Array(MAX_FLASHES);
+
 const flashX1  = new Float32Array(MAX_FLASHES);
 const flashY1  = new Float32Array(MAX_FLASHES);
 const flashX2  = new Float32Array(MAX_FLASHES);
@@ -486,38 +485,6 @@ void main() {
 }
 `;
 
-const LINE_VS_SRC = `
-attribute vec2  a_posA;
-attribute vec2  a_posB;
-attribute float a_side;
-attribute float a_t;
-attribute float a_alpha;
-uniform vec2    u_res;
-uniform float   u_hw;
-varying float   v_alpha;
-varying float   v_side;
-void main() {
-  vec2 pos = mix(a_posA, a_posB, a_t);
-  vec2 dir = a_posB - a_posA;
-  float len = length(dir);
-  if (len > 0.0) dir /= len;
-  vec2 perp = vec2(-dir.y, dir.x);
-  vec2 wp   = pos + perp * a_side * u_hw;
-  vec2 clip = (wp / u_res) * 2.0 - 1.0;
-  clip.y = -clip.y;
-  gl_Position = vec4(clip, 0.0, 1.0);
-  v_alpha = a_alpha;
-  v_side  = a_side;
-}`;
-
-const LINE_FS_SRC = `
-precision mediump float;
-varying float v_alpha;
-varying float v_side;
-void main() {
-  float g = exp(-v_side * v_side * 2.5);
-  gl_FragColor = vec4(1.0, 1.0, 1.0, v_alpha * g);
-}`;
 
 function compileShader(type, src) {
   const sh = gl.createShader(type);
@@ -577,24 +544,6 @@ function initGL() {
 
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-
-  // --- Line program ---
-  const lvs = compileShader(gl.VERTEX_SHADER,   LINE_VS_SRC);
-  const lfs = compileShader(gl.FRAGMENT_SHADER, LINE_FS_SRC);
-  lineProg = gl.createProgram();
-  gl.attachShader(lineProg, lvs);
-  gl.attachShader(lineProg, lfs);
-  gl.linkProgram(lineProg);
-
-  lineLocs.a_posA  = gl.getAttribLocation(lineProg,  'a_posA');
-  lineLocs.a_posB  = gl.getAttribLocation(lineProg,  'a_posB');
-  lineLocs.a_side  = gl.getAttribLocation(lineProg,  'a_side');
-  lineLocs.a_t     = gl.getAttribLocation(lineProg,  'a_t');
-  lineLocs.a_alpha = gl.getAttribLocation(lineProg,  'a_alpha');
-  lineLocs.u_res   = gl.getUniformLocation(lineProg, 'u_res');
-  lineLocs.u_hw    = gl.getUniformLocation(lineProg, 'u_hw');
-
-  lineBufs.flash = gl.createBuffer();
 
   return true;
 }
@@ -994,7 +943,7 @@ function updateSimulation(dt) {
     }
     flashCount = fc;
 
-    if (frameCount >= CONFIG.spawnLockout) {
+    if (frameCount >= CONFIG.spawnLockout && !convergencePending) {
     const thresh = CONFIG.lineSyncThreshold;
     const sr2    = CONFIG.syncRadius * CONFIG.syncRadius;
     for (let i = 0; i < n && flashCount < MAX_FLASHES - 1; i++) {
@@ -1088,50 +1037,22 @@ function render() {
 
   gl.drawArrays(gl.POINTS, 0, n);
 
-  // Flash lines — rendered as quads with gaussian soft edge
+  // Signal particles — a glowing point that shoots from one bug to another
   if (flashCount > 0) {
-    const SIDES = [1, -1,  1,   1, -1, -1];
-    const TS    = [0,  0,  1,   1,  0,  1];
-    let vi = 0;
-
     for (let k = 0; k < flashCount; k++) {
-      const t     = flashAge[k] / flashDur[k];
-      const alpha = CONFIG.flashMaxAlpha * (1.0 - t) * (1.0 - t);
-      for (let v = 0; v < 6; v++) {
-        flashBuf[vi++] = flashX1[k];
-        flashBuf[vi++] = flashY1[k];
-        flashBuf[vi++] = flashX2[k];
-        flashBuf[vi++] = flashY2[k];
-        flashBuf[vi++] = SIDES[v];
-        flashBuf[vi++] = TS[v];
-        flashBuf[vi++] = alpha;
-      }
+      const t = flashAge[k] / flashDur[k];
+      a_sig_pos[k*2]   = flashX1[k] + (flashX2[k] - flashX1[k]) * t;
+      a_sig_pos[k*2+1] = flashY1[k] + (flashY2[k] - flashY1[k]) * t;
+      a_sig_ph[k]      = Math.PI * 0.5;                       // always peak-lit
+      a_sig_lum[k]     = CONFIG.flashMaxAlpha * (1.0 - t * 0.4); // slight fade on arrival
+      a_sig_sz[k]      = CONFIG.signalSize;
     }
-
-    const vc     = flashCount * 6;
-    const stride = 7 * 4;
-    gl.useProgram(lineProg);
-    gl.uniform2f(lineLocs.u_res, w, h);
-    gl.uniform1f(lineLocs.u_hw, CONFIG.flashHalfWidth);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, lineBufs.flash);
-    gl.bufferData(gl.ARRAY_BUFFER, flashBuf.subarray(0, vi), gl.DYNAMIC_DRAW);
-
-    gl.enableVertexAttribArray(lineLocs.a_posA);
-    gl.vertexAttribPointer(lineLocs.a_posA, 2, gl.FLOAT, false, stride, 0);
-    gl.enableVertexAttribArray(lineLocs.a_posB);
-    gl.vertexAttribPointer(lineLocs.a_posB, 2, gl.FLOAT, false, stride, 2 * 4);
-    gl.enableVertexAttribArray(lineLocs.a_side);
-    gl.vertexAttribPointer(lineLocs.a_side, 1, gl.FLOAT, false, stride, 4 * 4);
-    gl.enableVertexAttribArray(lineLocs.a_t);
-    gl.vertexAttribPointer(lineLocs.a_t, 1, gl.FLOAT, false, stride, 5 * 4);
-    gl.enableVertexAttribArray(lineLocs.a_alpha);
-    gl.vertexAttribPointer(lineLocs.a_alpha, 1, gl.FLOAT, false, stride, 6 * 4);
-
-    gl.drawArrays(gl.TRIANGLES, 0, vc);
-
-    // Restore bug program for orb draw
     gl.useProgram(prog);
+    uploadBuffer(bufs.position,   a_sig_pos.subarray(0, flashCount * 2), locs.a_position,   2);
+    uploadBuffer(bufs.phase,      a_sig_ph.subarray(0, flashCount),      locs.a_phase,      1);
+    uploadBuffer(bufs.luminosity, a_sig_lum.subarray(0, flashCount),     locs.a_luminosity, 1);
+    uploadBuffer(bufs.size,       a_sig_sz.subarray(0, flashCount),      locs.a_size,       1);
+    gl.drawArrays(gl.POINTS, 0, flashCount);
   }
 
   // Orb
