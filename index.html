@@ -400,6 +400,8 @@ let initMaxFreq = 0;   // highest freq assigned at reset; target for convergence
 // Convergence staging
 let convergencePending     = false;
 let convergencePendingTime = 0;       // seconds elapsed since threshold reached
+let preEndActive           = false;
+let preEndElapsed          = 0;       // seconds elapsed in pre-end flash phase
 const convSpeed = new Float32Array(MAX_BUGS); // per-bug speed during convergence
 
 // Trail particle system
@@ -598,6 +600,8 @@ function fullReset() {
   flashCount     = 0;
   convergencePending     = false;
   convergencePendingTime = 0;
+  preEndActive           = false;
+  preEndElapsed          = 0;
   trailCount             = 0;
   trailSpawnTick         = 0;
   arrivedCount    = 0;
@@ -836,31 +840,40 @@ function updateSimulation(dt) {
 
       if (convergencePendingTime >= CONFIG.convergenceDelay) {
         convergencePending = false;
+        preEndActive       = true;
+        preEndElapsed      = 0;
+      }
+    }
+  }
 
-        const cx = 60 + Math.random() * (w - 120);
-        const cy = 60 + Math.random() * (h - 120);
-        orb.x      = cx;
-        orb.y      = cy;
-        orb.active     = true;
-        orb.phase      = 'collecting';
-        orb.size       = CONFIG.orbMaxSize * 0.15;   // starts small; grows with arrivals
-        orb.brightness = 1.0;                         // immediately fully lit
-        orb.elapsed    = 0;
-        arrivedCount    = 0;
-        convergingTotal = n;
+  // Pre-end sequence: show all flashes for 3 seconds, then launch orb
+  if (preEndActive) {
+    preEndElapsed += dtS;
+    if (preEndElapsed >= 3.0) {
+      preEndActive = false;
 
-        const speedRange = CONFIG.convergenceSpeedMax - CONFIG.convergenceSpeedMin;
-        for (let i = 0; i < n; i++) {
-          convSpeed[i]  = CONFIG.convergenceSpeedMin + Math.random() * speedRange;
-          target[i*2]   = cx;
-          target[i*2+1] = cy;
-          // Initial velocity pointing straight in; spiral is applied dynamically in step 5
-          const dx  = cx - pos[i*2], dy = cy - pos[i*2+1];
-          const len = Math.sqrt(dx*dx + dy*dy) || 1;
-          vel[i*2]   = (dx / len) * convSpeed[i];
-          vel[i*2+1] = (dy / len) * convSpeed[i];
-          state[i]   = CONVERGING;
-        }
+      const cx = 60 + Math.random() * (w - 120);
+      const cy = 60 + Math.random() * (h - 120);
+      orb.x      = cx;
+      orb.y      = cy;
+      orb.active     = true;
+      orb.phase      = 'collecting';
+      orb.size       = CONFIG.orbMaxSize * 0.15;
+      orb.brightness = 1.0;
+      orb.elapsed    = 0;
+      arrivedCount    = 0;
+      convergingTotal = n;
+
+      const speedRange = CONFIG.convergenceSpeedMax - CONFIG.convergenceSpeedMin;
+      for (let i = 0; i < n; i++) {
+        convSpeed[i]  = CONFIG.convergenceSpeedMin + Math.random() * speedRange;
+        target[i*2]   = cx;
+        target[i*2+1] = cy;
+        const dx  = cx - pos[i*2], dy = cy - pos[i*2+1];
+        const len = Math.sqrt(dx*dx + dy*dy) || 1;
+        vel[i*2]   = (dx / len) * convSpeed[i];
+        vel[i*2+1] = (dy / len) * convSpeed[i];
+        state[i]   = CONVERGING;
       }
     }
   }
@@ -914,8 +927,8 @@ function updateSimulation(dt) {
         // Position and reveal the "11" text
         numberEl.style.left     = orb.x + 'px';
         numberEl.style.top      = orb.y + 'px';
-        numberEl.style.fontSize = Math.round(orb.size * 0.65) + 'px';
-        numberEl.style.opacity  = '1';
+        numberEl.style.fontSize = Math.round(orb.size * 0.435) + 'px';
+        numberEl.style.opacity  = '0.5';
       }
 
     } else if (orb.phase === 'fade') {
@@ -924,7 +937,7 @@ function updateSimulation(dt) {
       orb.brightness = 1.0 - t;
       orb.size       = CONFIG.orbMaxSize;   // stays full size during fade
       // Fade "11" out in 1 second
-      numberEl.style.opacity = Math.max(0, 1.0 - orb.elapsed).toFixed(3);
+      numberEl.style.opacity = Math.max(0, 0.5 - orb.elapsed * 0.5).toFixed(3);
       if (t >= 1.0) {
         numberEl.style.opacity = '0';
         fullReset();
@@ -946,7 +959,7 @@ function updateSimulation(dt) {
     }
     flashCount = fc;
 
-    if (frameCount >= CONFIG.spawnLockout && !convergencePending) {
+    if (frameCount >= CONFIG.spawnLockout && (!convergencePending || preEndActive)) {
     const thresh = CONFIG.lineSyncThreshold;
     const sr2    = CONFIG.syncRadius * CONFIG.syncRadius;
     for (let i = 0; i < n && flashCount < MAX_FLASHES - 1; i++) {
@@ -957,7 +970,7 @@ function updateSimulation(dt) {
         let pd = Math.abs(phase[i] - phase[j]);
         if (pd > Math.PI) pd = TWO_PI - pd;
         if (pd >= thresh) continue;
-        if (Math.random() >= CONFIG.flashProbability) continue;
+        if (!preEndActive && Math.random() >= CONFIG.flashProbability) continue;
         const dur = CONFIG.flashDuration * (0.6 + Math.random() * 0.8);
         const gap = dur * 0.12;
         const np  = CONFIG.signalParticleCount;
@@ -1052,7 +1065,7 @@ function render() {
       a_sig_pos[k*2]   = flashX1[k] + (flashX2[k] - flashX1[k]) * t;
       a_sig_pos[k*2+1] = flashY1[k] + (flashY2[k] - flashY1[k]) * t;
       a_sig_ph[k]      = Math.PI * 0.5;                       // always peak-lit
-      a_sig_lum[k]     = CONFIG.flashMaxAlpha * (1.0 - t * 0.4); // slight fade on arrival
+      a_sig_lum[k]     = CONFIG.flashMaxAlpha * (preEndActive ? 2.0 : 1.0) * (1.0 - t * 0.4); // slight fade on arrival
       a_sig_sz[k]      = CONFIG.signalSize;
     }
     gl.useProgram(prog);
